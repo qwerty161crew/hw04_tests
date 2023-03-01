@@ -21,6 +21,7 @@ class PostModelTest(TestCase):
             text='Тестовый пост',
             author=cls.user,
         )
+
     def test_models_have_correct_object_names(self):
         """__str__  task - это строчка с содержимым task.title."""
         post = PostModelTest.post  # Обратите внимание на синтаксис
