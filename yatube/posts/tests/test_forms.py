@@ -9,6 +9,9 @@ class PostFromTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.post_author = User.objects.create_user(
+            username='post_author',
+        )
         cls.user = User.objects.create_user(username='authe')
         cls.group = Group.objects.create(
             title='Тестовая группа',
@@ -21,34 +24,51 @@ class PostFromTest(TestCase):
         )
 
     def setUp(self):
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+        self.guest_user = Client()
+        self.authorized_user = Client()
+        self.authorized_user.force_login(self.post_author)
 
     def test_count_post(self):
         tasks_count = Post.objects.count()
-        group_count = Group.objects.count()
         self.assertEqual(Post.objects.count(), tasks_count)
-        self.assertEqual(Group.objects.count(), group_count)
-        # Проверяем, что создалась запись с нашим слагом
-        # self.assertTrue(
-        #     Group.objects.filter(
-        #         slug='testovyij-zagolovok',
-        #         ).exists()
-        # )
-        # Подготавливаем данные для передачи в форму
 
         form_data = {
             'text': 'Тестовый пост',
             'group_id': '1',
         }
-        response = self.authorized_client.post(
+        response = self.authorized_user.post(
             reverse('posts:post_create'),
             data=form_data,
             form=True
         )
         # Проверяем, сработал ли редирект
         self.assertRedirects(response, reverse('posts:profile',
-                                               kwargs={'username': 'authe'}))
+                                               kwargs={'username': 'post_author'}))
         # Проверяем, увеличилось ли число постов
         self.assertEqual(Post.objects.count(), tasks_count + 1)
+
+    def test_create_post_form(self):
+        post = Post.objects.create(
+            text='Текст поста для редактирования',
+            author=self.post_author,
+            group=self.group,
+        )
+        form_data = {
+            'text': 'Отредактированный текст поста',
+            'group': self.group.id,
+        }
+        response = self.authorized_user.post(
+            reverse(
+                'posts:post_edit',
+                args=[post.id]),
+            data=form_data,
+            follow=True
+        )
+        self.assertRedirects(
+            response,
+            reverse('posts:post_detail', kwargs={'post_id': post.id})
+        )
+        post = Post.objects.latest('id')
+        self.assertTrue(post.text == form_data['text'])
+        self.assertTrue(post.author == self.post_author)
+        self.assertTrue(post.group_id == form_data['group'])
