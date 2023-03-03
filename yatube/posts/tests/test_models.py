@@ -1,9 +1,6 @@
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from ..models import Group, Post
-
-User = get_user_model()
+from ..models import Group, Post, User
 
 
 class PostModelTest(TestCase):
@@ -17,8 +14,7 @@ class PostModelTest(TestCase):
             description='Тестовое описание',
         )
         cls.post = Post.objects.create(
-            id=2,
-            text='Тестовый пост',
+            text='Тестовый пост который состоит из 15 сиволов',
             author=cls.user,
         )
 

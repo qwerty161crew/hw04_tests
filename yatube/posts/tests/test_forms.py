@@ -1,7 +1,6 @@
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.test import Client, TestCase
-from django.urls import reverse
 
 from ..models import Post, Group, User
 
@@ -28,7 +27,9 @@ class PostFromTest(TestCase):
 
     def test_count_post(self):
         tasks_count = Post.objects.count()
+        group_count = Group.objects.count()
         self.assertEqual(Post.objects.count(), tasks_count)
+        self.assertEqual(Group.objects.count(), group_count)
         # Проверяем, что создалась запись с нашим слагом
         # self.assertTrue(
         #     Group.objects.filter(
@@ -39,6 +40,7 @@ class PostFromTest(TestCase):
 
         form_data = {
             'text': 'Тестовый пост',
+            'group_id': '1',
         }
         response = self.authorized_client.post(
             reverse('posts:post_create'),
