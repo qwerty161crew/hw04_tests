@@ -1,14 +1,14 @@
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render, redirect
-from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 
 from .forms import PostForm
 from .models import Post, Group, User
 
+PAGE_POST = 10
 
 def get_page(page_number, posts):
-    paginator = Paginator(posts, 10)
+    paginator = Paginator(posts, PAGE_POST)
     page_obj = paginator.get_page(page_number)
     return page_obj
 
@@ -28,7 +28,6 @@ def group_posts(request, slug):
     page_obj = get_page(request.GET.get('page'), posts)
     context = {
         'group': group,
-        'posts': posts,
         'page_obj': page_obj
     }
     return render(request, 'posts/group_list.html', context)
@@ -58,27 +57,28 @@ def post_create(request):
     """Добавления поста."""
     template = "posts/create_post.html"
     form = PostForm(request.POST or None)
-    if form.is_valid():
-        instance = form.save(commit=False)
-        instance.author_id = request.user.id
-        instance.save()
-        return redirect(reverse("posts:profile",
-                                kwargs={'username': request.user}))
+    if not form.is_valid():
+        return render(request, template, {"form": form, "is_edit": False})
+    instance = form.save(commit=False)
+    instance.author_id = request.user.id
+    instance.save()
+    return redirect("posts:profile",
+                            kwargs={'username': request.user})
 
-    return render(request, template, {"form": form, "is_edit": False})
+
 
 
 @login_required
 def post_edit(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     if request.user.id != post.author.id:
-        return redirect(reverse("posts:post_detail",
-                                kwargs={'post_id': post_id}))
+        return redirect("posts:post_detail",
+                                kwargs={'post_id': post_id})
     form = PostForm(request.POST or None, instance=post)
     if form.is_valid():
         form.save()
-        return redirect(reverse("posts:post_detail",
-                                kwargs={'post_id': post_id}))
+        return redirect("posts:post_detail",
+                                kwargs={'post_id': post_id})
     context = {
         "form": form,
         "is_edit": True,
