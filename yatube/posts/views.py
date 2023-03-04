@@ -5,8 +5,7 @@ from django.contrib.auth.decorators import login_required
 
 from .forms import PostForm
 from .models import Post, Group, User
-
-PAGE_POST = 10
+from .settings import PAGE_POST
 
 def get_page(page_number, posts):
     paginator = Paginator(posts, PAGE_POST)

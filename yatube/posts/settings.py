@@ -1,0 +1,1 @@
+PAGE_POST = 10
