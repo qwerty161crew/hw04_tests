@@ -1,6 +1,7 @@
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.test import Client, TestCase
+from django import forms
 
 from ..models import Post, Group, User
 
@@ -72,3 +73,18 @@ class PostFromTest(TestCase):
         self.assertTrue(post.text == form_data['text'])
         self.assertTrue(post.author == self.post_author)
         self.assertTrue(post.group_id == form_data['group'])
+
+    def test_post_create_pages_show_correct_context(self):
+        """Шаблон task_detail сформирован с правильным контекстом."""
+        response = self.authorized_user.get(
+            reverse('posts:post_create')
+        )
+        form_fields = {
+            'text': forms.fields.CharField,
+            'group': forms.ModelChoiceField
+        }
+
+        for value, expected in form_fields.items():
+            with self.subTest(value=value):
+                form_field = response.context['form'].fields[value]
+                self.assertIsInstance(form_field, expected)
