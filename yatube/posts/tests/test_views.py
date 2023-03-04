@@ -4,6 +4,9 @@ from django import forms
 
 from ..models import Post, Group, User
 
+# URL_NAME = ('posts:index')
+# URL_NAME_AND_SLUG = ('posts:group_posts', kwargs={'slug': 'test-slug'}, 'posts:profile', kwargs={'username': 'auth'}, )
+
 
 class ViewsPagesTests(TestCase):
     @classmethod
@@ -20,6 +23,7 @@ class ViewsPagesTests(TestCase):
             cls.posts.append(Post.objects.create(
                 text='Тестовый пост',
                 author=cls.user,
+                group=cls.group
             ))
 
     def setUp(self):
@@ -66,7 +70,11 @@ class ViewsPagesTests(TestCase):
         # совпадает с ожидаемым
         first_object = response.context['page_obj'][0]
         task_text_0 = first_object.text
+        task_group = first_object.group
+        task_autrhor = first_object.author
         self.assertEqual(task_text_0, 'Тестовый пост')
+        self.assertEqual(task_group, self.group)
+        self.assertEqual(task_autrhor, self.user)
 
     def test_group_posts_pages_show_correct_context(self):
         """Шаблон task_detail сформирован с правильным контекстом."""
@@ -95,21 +103,6 @@ class ViewsPagesTests(TestCase):
             reverse('posts:post_detail', kwargs={'post_id': '1'})
         )
         self.assertEqual(response.context['post'].id, 1)
-
-    def test_post_create_pages_show_correct_context(self):
-        """Шаблон task_detail сформирован с правильным контекстом."""
-        response = self.authorized_client.get(
-            reverse('posts:post_create')
-        )
-        form_fields = {
-            'text': forms.fields.CharField,
-            'group': forms.ModelChoiceField
-        }
-
-        for value, expected in form_fields.items():
-            with self.subTest(value=value):
-                form_field = response.context['form'].fields[value]
-                self.assertIsInstance(form_field, expected)
 
     def test_post_create_user_pages_show_correct_context(self):
         """Шаблон task_detail сформирован с правильным контекстом."""
