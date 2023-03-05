@@ -2,6 +2,7 @@
 {% block title %}
   Пост {{ post.text|truncatechars:30}}
 {% endblock %}
+{% block header %} Пост пользователя {{ post.author.get_full_name }} {% endblock %}
 {% block content %}
     <main>
       <div class="row">
