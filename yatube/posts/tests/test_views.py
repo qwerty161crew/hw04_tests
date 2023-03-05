@@ -2,10 +2,8 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django import forms
 
+from ..settings import PAGE_POST
 from ..models import Post, Group, User
-
-# URL_NAME = ('posts:index')
-# URL_NAME_AND_SLUG = ('posts:group_posts', kwargs={'slug': 'test-slug'}, 'posts:profile', kwargs={'username': 'auth'}, )
 
 
 class ViewsPagesTests(TestCase):
@@ -56,12 +54,12 @@ class ViewsPagesTests(TestCase):
     def test_first_page_contains_ten_records(self):
         response = self.client.get(reverse('posts:index'))
         # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(len(response.context['page_obj']), 10)
+        self.assertEqual(len(response.context['page_obj']), PAGE_POST)
 
     def test_second_page_contains_three_records(self):
         # Проверка: на второй странице должно быть три поста.
         response = self.client.get(reverse('posts:index') + '?page=2')
-        self.assertEqual(len(response.context['page_obj']), 3)
+        self.assertEqual(len(response.context['page_obj']), PAGE_POST - 7)
 
     def test_index_page_show_correct_context(self):
         """Шаблон task_list сформирован с правильным контекстом."""

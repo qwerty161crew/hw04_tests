@@ -1,11 +1,12 @@
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render, redirect
-from django.urls import reverse 
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 
 from .forms import PostForm
 from .models import Post, Group, User
 from .settings import PAGE_POST
+
 
 def get_page(page_number, posts):
     paginator = Paginator(posts, PAGE_POST)
@@ -62,9 +63,8 @@ def post_create(request):
     instance = form.save(commit=False)
     instance.author_id = request.user.id
     instance.save()
-    return redirect(reverse("posts:profile", kwargs={'username': request.user}))
-
-
+    return redirect(reverse("posts:profile",
+                            kwargs={'username': request.user}))
 
 
 @login_required
@@ -72,7 +72,7 @@ def post_edit(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     if request.user.id != post.author.id:
         return redirect("posts:post_detail",
-                                kwargs={'post_id': post_id})
+                        kwargs={'post_id': post_id})
     form = PostForm(request.POST or None, instance=post)
     if form.is_valid():
         form.save()

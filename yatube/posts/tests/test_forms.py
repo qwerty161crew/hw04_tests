@@ -44,7 +44,8 @@ class PostFromTest(TestCase):
         )
         # Проверяем, сработал ли редирект
         self.assertRedirects(response, reverse('posts:profile',
-                                               kwargs={'username': 'post_author'}))
+                                               kwargs={'username':
+                                                       'post_author'}))
         # Проверяем, увеличилось ли число постов
         self.assertEqual(Post.objects.count(), tasks_count + 1)
 
