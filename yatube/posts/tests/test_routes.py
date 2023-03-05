@@ -2,6 +2,7 @@ from django.test import TestCase, Client
 
 from ..models import Post, Group, User
 
+
 class PostModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -16,6 +17,7 @@ class PostModelTest(TestCase):
             text='Тестовый пост который состоит из 15 сиволов',
             author=cls.user,
         )
+
     def setUp(self):
         self.guest_client = Client()
         self.authorized_client = Client()
@@ -34,5 +36,3 @@ class PostModelTest(TestCase):
         self.assertEqual(response.status_code, 200)
         response = self.authorized_client.get('/posts/1/edit/')
         self.assertEqual(response.status_code, 200)
-
-    
