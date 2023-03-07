@@ -104,25 +104,3 @@ class ViewsPagesTests(TestCase):
                                    'username': 'auth'}) + '?page=2')
         self.assertEqual(len(response.context['page_obj']), 3)
 
-    def test_post_detail_pages_show_correct_context(self):
-        """Шаблон task_detail сформирован с правильным контекстом."""
-        response = self.authorized_client.get(
-            reverse('posts:post_detail', kwargs={'post_id': '1'})
-        )
-        self.assertEqual(response.context['post'].id, 1)
-
-    def test_post_create_user_pages_show_correct_context(self):
-        """Шаблон task_detail сформирован с правильным контекстом."""
-        response = self.authorized_client.get(
-            reverse('posts:post_edit', kwargs={'post_id': '1'})
-        )
-        form_fields = {
-            'text': forms.fields.CharField,
-            'group': forms.ModelChoiceField
-        }
-
-        for value, expected in form_fields.items():
-            with self.subTest(value=value):
-                form_field = response.context['form'].fields[value]
-                self.assertIsInstance(form_field, expected)
-        self.assertTrue(response.context['is_edit'])

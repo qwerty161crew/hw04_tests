@@ -74,9 +74,9 @@ class PostFromTest(TestCase):
             reverse('posts:post_detail', kwargs={'post_id': post.id})
         )
         post = Post.objects.get(id=post.id)
-        self.assertTrue(post.text == form_data['text'])
-        self.assertTrue(post.author == self.post_author)
-        self.assertTrue(post.group_id == form_data['group'])
+        self.assertEqual(post.text, form_data['text'])
+        self.assertEqual(post.author, self.post_author)
+        self.assertEqual(post.group_id, form_data['group'])
         
 
     def test_post_create_pages_show_correct_context(self):
