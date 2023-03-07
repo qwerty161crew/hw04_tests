@@ -1,4 +1,5 @@
 from django.test import TestCase, Client
+from django.urls import reverse
 
 from ..models import Post, Group, User
 
@@ -7,20 +8,24 @@ class PostURLTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.POST_ID = 1
+        cls.USERNAME = 'post_author'
+        cls.GROUP_TITLE = 'Тестовая группа'
+        cls.GROUP_SLUG = 'test-slug'
         cls.TEMPLATE_NAME = {
-            'posts/index.html': '/',
-            'posts/group_list.html': '/group/test-slug/',
-            'posts/profile.html': '/profile/auth/',
-            'posts/post_detail.html': '/posts/1/',
+            'posts/index.html': reverse('posts:index'),
+            'posts/group_list.html': reverse('posts:group_posts', kwargs={'slug': cls.GROUP_SLUG}),
+            'posts/profile.html': reverse('posts:profile', kwargs={'username': cls.USERNAME}),
+            'posts/post_detail.html': reverse('posts:post_detail', kwargs={'post_id': cls.POST_ID}),
         }
         cls.TEMPLATE_NAME_AUTH = {
             '/create/': 'posts/create_post.html',
             '/posts/1/edit/': 'posts/create_post.html'
         }
-        cls.user = User.objects.create_user(username='auth')
+        cls.user = User.objects.create_user(username='post_author')
         cls.group = Group.objects.create(
-            title='Тестовая группа',
-            slug='test-slug',
+            title=cls.GROUP_TITLE,
+            slug=cls.GROUP_SLUG,
             description='Тестовое описание',
         )
         cls.post = Post.objects.create(
