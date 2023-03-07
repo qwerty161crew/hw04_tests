@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load thumbnail %}
 {% block title %} главная страница {% endblock %}
 {% block header %} главная страница {% endblock %}
 {% block content %}
@@ -16,6 +17,7 @@
                 Дата публикации: {{ post.pub_date }}
               </li>
             </ul> 
+            <img src="../img/" width="960" height="339" alt="">
             <p>
               {{ post.text | linebreaksbr }}
             </p>

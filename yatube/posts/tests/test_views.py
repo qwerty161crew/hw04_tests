@@ -10,10 +10,16 @@ class ViewsPagesTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.USERNAME = 'post_author'
+        cls.GROUP_TITLE = 'Тестовая группа'
+        cls.GROUP_SLUG = 'test-slug'
         cls.user = User.objects.create_user(username='auth')
+        cls.post_author = User.objects.create_user(
+            username=cls.USERNAME,
+        )
         cls.group = Group.objects.create(
-            title='Тестовая группа',
-            slug='test-slug',
+            title=cls.GROUP_TITLE,
+            slug=cls.GROUP_SLUG,
             description='Тестовое описание',
         )
         cls.posts = []
@@ -25,6 +31,9 @@ class ViewsPagesTests(TestCase):
             ))
 
     def setUp(self):
+        self.URLS = {'post_create': reverse('posts:post_create'),
+                     'profile': reverse('posts:profile',
+                                        kwargs={'username': self.USERNAME})}
         self.authorized_client = Client()
         self.guest_client = Client()
         self.authorized_client.force_login(self.user)

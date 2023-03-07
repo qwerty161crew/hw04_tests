@@ -10,13 +10,16 @@ class PostFromTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.USERNAME = 'post_author'
+        cls.GROUP_TITLE = 'Тестовая группа'
+        cls.GROUP_SLUG = 'test-slug'
         cls.post_author = User.objects.create_user(
-            username='post_author',
+            username=cls.USERNAME,
         )
         cls.user = User.objects.create_user(username='authe')
         cls.group = Group.objects.create(
-            title='Тестовая группа',
-            slug='test-slug',
+            title=cls.GROUP_TITLE,
+            slug=cls.GROUP_SLUG,
             description='Тестовое описание',
         )
         cls.post = Post.objects.create(
@@ -25,31 +28,31 @@ class PostFromTest(TestCase):
         )
 
     def setUp(self):
+        self.URLS = {'post_create': reverse('posts:post_create'),
+                     'profile': reverse('posts:profile',
+                                        kwargs={'username': self.USERNAME})}
         self.guest_user = Client()
         self.authorized_user = Client()
         self.authorized_user.force_login(self.post_author)
 
     def test_count_post(self):
         tasks_count = Post.objects.count()
-        self.assertEqual(Post.objects.count(), tasks_count)
-
         form_data = {
             'text': 'Тестовый пост',
-            'group_id': '1',
+            'group': self.group.id,
         }
         response = self.authorized_user.post(
-            reverse('posts:post_create'),
+            self.URLS.get('post_create'),
             data=form_data,
             form=True
         )
         # Проверяем, сработал ли редирект
-        self.assertRedirects(response, reverse('posts:profile',
-                                               kwargs={'username':
-                                                       'post_author'}))
+        self.assertRedirects(response, self.URLS.get('profile'))
         # Проверяем, увеличилось ли число постов
         self.assertEqual(Post.objects.count(), tasks_count + 1)
 
-    def test_create_post_form(self):
+    def test_post_edit_form(self):        # post_count = Post.objects.count()
+        # self.assertEqual(Post.objects.count(), post_count + 1)
         post = Post.objects.create(
             text='Текст поста для редактирования',
             author=self.post_author,
@@ -62,7 +65,7 @@ class PostFromTest(TestCase):
         response = self.authorized_user.post(
             reverse(
                 'posts:post_edit',
-                args=[post.id]),
+                kwargs={'post_id': post.id}),
             data=form_data,
             follow=True
         )
@@ -70,10 +73,11 @@ class PostFromTest(TestCase):
             response,
             reverse('posts:post_detail', kwargs={'post_id': post.id})
         )
-        post = Post.objects.latest('id')
+        post = Post.objects.get(id=post.id)
         self.assertTrue(post.text == form_data['text'])
         self.assertTrue(post.author == self.post_author)
         self.assertTrue(post.group_id == form_data['group'])
+        
 
     def test_post_create_pages_show_correct_context(self):
         """Шаблон task_detail сформирован с правильным контекстом."""
