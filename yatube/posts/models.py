@@ -31,12 +31,6 @@ class Post(models.Model):
         Group, on_delete=models.SET_NULL,
         related_name='posts', blank=True, null=True, verbose_name='группа')
 
-    image = models.ImageField(
-        'Картинка',
-        upload_to='posts/',
-        blank=True
-    )
-
     def __str__(self):
         return self.text[:15]
 
