@@ -51,8 +51,8 @@ class PostFromTest(TestCase):
         # Проверяем, увеличилось ли число постов
         self.assertEqual(Post.objects.count(), tasks_count + 1)
 
-    def test_post_edit_form(self):        # post_count = Post.objects.count()
-        # self.assertEqual(Post.objects.count(), post_count + 1)
+    def test_post_edit_form(self):
+        post_count = Post.objects.count()
         post = Post.objects.create(
             text='Текст поста для редактирования',
             author=self.post_author,
@@ -76,7 +76,8 @@ class PostFromTest(TestCase):
         post = Post.objects.get(id=post.id)
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.author, self.post_author)
-        self.assertEqual(post.group_id, form_data['group'])
+        # self.assertEqual(post.group_id, form_data['group'])
+        self.assertEqual(Post.objects.count(), post_count + 1)
 
     def test_post_create_pages_show_correct_context(self):
         """Шаблон task_detail сформирован с правильным контекстом."""

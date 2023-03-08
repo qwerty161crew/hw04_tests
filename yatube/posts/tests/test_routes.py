@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 POST_ID = 1
-USERNAME = 'tester'
+USERNAME = 'auth'
 SLUG = 'test-slug'
 
 
