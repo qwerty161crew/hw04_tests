@@ -65,7 +65,7 @@ class PostFromTest(TestCase):
         response = self.authorized_user.post(
             reverse(
                 'posts:post_edit',
-                kwargs={'post_id': post.id}),
+                kwargs={'post_id': post.id, 'author': self.USERNAME}),
             data=form_data,
             follow=True
         )
@@ -76,7 +76,7 @@ class PostFromTest(TestCase):
         post = Post.objects.get(id=post.id)
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.author, self.post_author)
-        # self.assertEqual(post.group_id, form_data['group'])
+        self.assertEqual(post.group_id, form_data['group'])
         self.assertEqual(Post.objects.count(), post_count + 1)
 
     def test_post_create_pages_show_correct_context(self):
