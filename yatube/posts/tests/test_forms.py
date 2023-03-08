@@ -1,90 +1,97 @@
 from django.test import Client, TestCase
 from django.urls import reverse
-from django.test import Client, TestCase
-from django import forms
 
-from ..models import Post, Group, User
+from ..forms import forms
+from ..models import Group, Post, User
 
 
-class PostFromTest(TestCase):
+class PostCreateFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.USERNAME = 'post_author'
-        cls.GROUP_TITLE = 'Тестовая группа'
-        cls.GROUP_SLUG = 'test-slug'
-        cls.post_author = User.objects.create_user(
-            username=cls.USERNAME,
-        )
-        cls.user = User.objects.create_user(username='authe')
+        cls.CREATE_POST = reverse('posts:post_create')
+        cls.USERNAME = 'tester'
+        cls.PROFILE = reverse('posts:profile',
+                              kwargs={'username': cls.USERNAME})
+        cls.user = User.objects.create_user(username=cls.USERNAME)
         cls.group = Group.objects.create(
-            title=cls.GROUP_TITLE,
-            slug=cls.GROUP_SLUG,
+            title='Тестовый заголовок',
+            slug='test-slug',
+            description='Тестовое описание',
+        )
+        cls.group_1 = Group.objects.create(
+            title='Тестовый заголовок',
+            slug='test-slug_1',
             description='Тестовое описание',
         )
         cls.post = Post.objects.create(
-            text='Тестовый пост',
             author=cls.user,
+            text='Тестовый текст',
+            group=cls.group,
         )
+
+        cls.EDIT_POST = reverse('posts:post_edit',
+                                kwargs={'post_id': cls.post.id})
+        cls.POST_DETAIL = reverse('posts:post_detail',
+                                  kwargs={'post_id': cls.post.id})
 
     def setUp(self):
-        self.URLS = {'post_create': reverse('posts:post_create'),
-                     'profile': reverse('posts:profile',
-                                        kwargs={'username': self.USERNAME}),
-                     'post_edit': reverse('posts:post_edit',
-                                          kwargs={'post_id': self.post.id}),
-                     'post_detail': reverse('posts:post_detail',
-                                            kwargs={'post_id': self.post.id})
-                     }
-        self.guest_user = Client()
-        self.authorized_user = Client()
-        self.authorized_user.force_login(self.post_author)
+        self.authorized_client = Client()  # Авторизованный
+        self.authorized_client.force_login(self.user)
 
-    def test_count_post(self):
-        tasks_count = Post.objects.count()
+    def test_create_post(self):
         form_data = {
-            'text': 'Тестовый пост',
-            'group': self.group.id,
+            'text': 'text',
+            'group': self.group.pk,
         }
-        response = self.authorized_user.post(
-            self.URLS.get('post_create'),
-            data=form_data,
-            form=True
-        )
-        # Проверяем, сработал ли редирект
-        self.assertRedirects(response, self.URLS.get('profile'))
-        # Проверяем, увеличилось ли число постов
-        self.assertEqual(Post.objects.count(), tasks_count + 1)
-
-    def test_post_edit_form(self):
-        post_count = Post.objects.count()
-        form_data = {
-            'text': 'Отредактированный текст поста',
-            'group': self.group.id,
-        }
-        response = self.authorized_user.post(
-            self.URLS.get('post_edit'),
+        """Тестирование создания поста"""
+        posts_count = Post.objects.count()
+        response = self.authorized_client.post(
+            self.CREATE_POST,
             data=form_data,
             follow=True
         )
-        self.assertRedirects(response, self.URLS.get('post_detail'))
-        post = Post.objects.get(id=self.post.id)
+        self.assertEqual(Post.objects.count(), posts_count + 1)
+        posts = Post.objects.exclude(id=self.post.id)
+        self.assertEqual(len(posts), 1)
+        post = posts[0]
         self.assertEqual(post.text, form_data['text'])
-        self.assertEqual(post.author, self.post_author)
-        self.assertEqual(post.group_id, form_data['group'])
-        self.assertEqual(Post.objects.count(), post_count + 1)
+        self.assertEqual(post.group.id, form_data['group'])
+        self.assertEqual(post.author, self.user)
+        self.assertRedirects(response, self.PROFILE)
 
-    def test_post_create_pages_show_correct_context(self):
-        """Шаблон task_detail сформирован с правильным контекстом."""
-        response = self.authorized_user.get(
-            reverse('posts:post_create')
+    def test_editing_post(self):
+        form_data = {
+            'text': 'TEST',
+            'group': self.group_1.pk,
+        }
+        posts_count = Post.objects.count()
+        response = self.authorized_client.post(
+            self.EDIT_POST,
+            data=form_data,
+            follow=True
         )
+        post = Post.objects.get(id=self.post.id)
+        self.assertEqual(Post.objects.count(), posts_count)
+        self.assertEqual(form_data['text'], post.text)
+        self.assertEqual(form_data['group'], post.group.id)
+        self.assertEqual(post.author, self.user)
+        self.assertRedirects(response, self.POST_DETAIL)
+
+    def test_post_posts_edit_page_show_correct_context(self):
+        templates_url_names = [
+            self.EDIT_POST,
+            self.CREATE_POST,
+        ]
         form_fields = {
             'text': forms.fields.CharField,
-            'group': forms.ModelChoiceField
+            'group': forms.fields.ChoiceField,
         }
-
-        for value, expected in form_fields.items():
-            with self.subTest(value=value):
-                form_field = response.context['form'].fields[value]
-                self.assertIsInstance(form_field, expected)
+        for url in templates_url_names:
+            with self.subTest(url=url):
+                response = self.authorized_client.get(url)
+                for value, expected in form_fields.items():
+                    with self.subTest(value=value):
+                        form_field = response.context.get('form').fields.get(
+                            value)
+                        self.assertIsInstance(form_field, expected)
