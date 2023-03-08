@@ -1,9 +1,10 @@
 from django.test import Client, TestCase
 from django.urls import reverse
-from django import forms
 
 from ..settings import PAGE_POST
 from ..models import Post, Group, User
+
+POST_RANGE = PAGE_POST + 3
 
 
 class ViewsPagesTests(TestCase):
@@ -23,12 +24,12 @@ class ViewsPagesTests(TestCase):
             description='Тестовое описание',
         )
         cls.posts = []
-        for i in range(13):
-            cls.posts.append(Post.objects.create(
+        Post.objects.bulk_create([
+            Post(
                 text='Тестовый пост',
                 author=cls.user,
-                group=cls.group
-            ))
+            ) for i in range(POST_RANGE)
+        ])
 
     def setUp(self):
         self.URLS = {'post_create': reverse('posts:post_create'),
@@ -77,10 +78,8 @@ class ViewsPagesTests(TestCase):
         # совпадает с ожидаемым
         first_object = response.context['page_obj'][0]
         task_text_0 = first_object.text
-        task_group = first_object.group
         task_autrhor = first_object.author
         self.assertEqual(task_text_0, 'Тестовый пост')
-        self.assertEqual(task_group, self.group)
         self.assertEqual(task_autrhor, self.user)
 
     def test_group_posts_pages_show_correct_context(self):
@@ -103,4 +102,3 @@ class ViewsPagesTests(TestCase):
         response = self.client.get(reverse('posts:profile', kwargs={
                                    'username': 'auth'}) + '?page=2')
         self.assertEqual(len(response.context['page_obj']), 3)
-

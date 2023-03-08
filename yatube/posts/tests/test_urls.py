@@ -14,9 +14,12 @@ class PostURLTests(TestCase):
         cls.GROUP_SLUG = 'test-slug'
         cls.TEMPLATE_NAME = {
             'posts/index.html': reverse('posts:index'),
-            'posts/group_list.html': reverse('posts:group_posts', kwargs={'slug': cls.GROUP_SLUG}),
-            'posts/profile.html': reverse('posts:profile', kwargs={'username': cls.USERNAME}),
-            'posts/post_detail.html': reverse('posts:post_detail', kwargs={'post_id': cls.POST_ID}),
+            'posts/group_list.html': reverse('posts:group_posts',
+                                             kwargs={'slug': cls.GROUP_SLUG}),
+            'posts/profile.html': reverse('posts:profile',
+                                          kwargs={'username': cls.USERNAME}),
+            'posts/post_detail.html': reverse('posts:post_detail',
+                                              kwargs={'post_id': cls.POST_ID}),
         }
         cls.TEMPLATE_NAME_AUTH = {
             '/create/': 'posts/create_post.html',
