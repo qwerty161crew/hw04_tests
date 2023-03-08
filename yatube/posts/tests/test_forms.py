@@ -77,7 +77,6 @@ class PostFromTest(TestCase):
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.author, self.post_author)
         self.assertEqual(post.group_id, form_data['group'])
-        
 
     def test_post_create_pages_show_correct_context(self):
         """Шаблон task_detail сформирован с правильным контекстом."""
