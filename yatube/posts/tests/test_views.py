@@ -1,34 +1,35 @@
-from django.test import Client, TestCase
+from django.test import TestCase, Client
 from django.urls import reverse
 
+from ..models import User, Post, Group
 from ..settings import NUMBER_POSTS
-from ..models import Post, Group, User
 
-SLUG = 'test-slug'
 USERNAME = 'post_author'
-POST_RANGE = NUMBER_POSTS + 3
-INDEX = ('posts:index')
-CREATE_POST = reverse('posts:post_create')
-PROFILE = reverse('posts:profile', kwargs={'username': USERNAME})
-GROUP_TITLE = 'Тестовая группа'
-GROUP_SLUG = 'test-slug'
-URLS = {'post_create': reverse('posts:post_create'),
-        'profile': reverse('posts:profile', kwargs={'username': USERNAME})}
+SLUG = 'test-slug'
+SLUG_1 = 'test-slug_1'
+INDEX = reverse('posts:index')
+PROFILE = reverse('posts:profile',
+                  kwargs={'username': USERNAME})
 GROUP = reverse('posts:group_posts',
                 kwargs={'slug': SLUG})
+GROUP_1 = reverse('posts:group_posts',
+                  kwargs={'slug': SLUG_1})
+TOTAL_POSTS = NUMBER_POSTS + 1
 
 
-class ViewsPagesTests(TestCase):
+class PostUrlTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='auth')
-        cls.post_author = User.objects.create_user(
-            username=USERNAME,
-        )
+        cls.user = User.objects.create_user(username=USERNAME)
         cls.group = Group.objects.create(
-            title='Тестовая группа',
+            title='Тестовый заголовок',
             slug=SLUG,
+            description='Тестовое описание',
+        )
+        cls.group_1 = Group.objects.create(
+            title='Тестовый заголовок',
+            slug='test-slug_1',
             description='Тестовое описание',
         )
         cls.post = Post.objects.create(
@@ -36,44 +37,17 @@ class ViewsPagesTests(TestCase):
             text='Тестовый текст',
             group=cls.group,
         )
-        Post.objects.bulk_create(
-            Post(
-                text='Тестовый пост',
-                author=cls.user,
-                group=cls.group
-            ) for i in range(POST_RANGE)
-        )
         cls.POST_DETAIL = reverse('posts:post_detail',
                                   kwargs={'post_id': cls.post.id})
 
     def setUp(self):
-        self.authorized_client = Client()
         self.guest_client = Client()
+        self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
-    def test_second_page_contains_three_records(self):
-        response = self.client.get(reverse('posts:index') + '?page=2')
-        self.assertEqual(len(response.context['page_obj']), NUMBER_POSTS - 6)
-
-    def test_group_posts_pages_show_correct_context(self):
-        response = self.authorized_client.get(
-            reverse('posts:group_posts', kwargs={'slug': 'test-slug'})
-        )
-        self.assertEqual(response.context['group'].title, 'Тестовая группа')
-        self.assertEqual(
-            response.context['group'].description, 'Тестовое описание')
-        self.assertEqual(response.context['group'].slug, 'test-slug')
-
-    def test_profile_pages_show_correct_context(self):
-        response = self.guest_client.get(
-            reverse('posts:profile', kwargs={'username': 'auth'})
-        )
-        self.assertEqual(
-            response.context['page_obj'][0].author.username, 'auth')
-        self.assertEqual(len(response.context['page_obj']), 10)
-        response = self.client.get(reverse('posts:profile', kwargs={
-                                   'username': 'auth'}) + '?page=2')
-        self.assertEqual(len(response.context['page_obj']), 4)
+    def test_post_not_in_another_group(self):
+        response = self.authorized_client.get(GROUP_1)
+        self.assertNotIn(self.post, response.context['page_obj'])
 
     def test_post_in_group(self):
         responses = [
@@ -95,3 +69,37 @@ class ViewsPagesTests(TestCase):
                 self.assertEqual(post.author, self.post.author)
                 self.assertEqual(post.group, self.post.group)
                 self.assertEqual(post.pk, self.post.pk)
+
+    def test_author_in__profile(self):
+        response = self.authorized_client.get(PROFILE)
+        self.assertEqual(response.context['author'], self.user)
+
+    def test_group_in_context(self):
+        response = self.authorized_client.get(GROUP)
+        self.assertEqual(response.context['group'], self.group)
+        self.assertEqual(response.context['group'].title, self.group.title)
+        self.assertEqual(response.context['group'].slug, self.group.slug)
+
+
+class PaginatorViewsTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='post_author')
+        Post.objects.bulk_create([
+            Post(
+                text='Тестовый текст',
+                author=cls.user,
+            ) for i in range(TOTAL_POSTS)
+        ])
+
+    def test_first_page(self):
+        response = self.client.get(INDEX)
+        self.assertEqual(len(response.context['page_obj']),
+                         NUMBER_POSTS)
+
+    def test_second_page(self):
+        response = self.client.get(f'{INDEX}?page=2')
+        calculation_len_obj = len(response.context['page_obj'])
+        calculation_obj = TOTAL_POSTS % NUMBER_POSTS
+        self.assertEqual(calculation_len_obj, calculation_obj)
