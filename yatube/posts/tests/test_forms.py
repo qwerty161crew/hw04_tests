@@ -4,16 +4,16 @@ from django.urls import reverse
 from ..forms import forms
 from ..models import Group, Post, User
 
+USERNAME = 'tester'
+PROFILE = reverse('posts:profile', kwargs={'username': USERNAME})
+CREATE_POST = reverse('posts:post_create')
+
 
 class PostCreateFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.CREATE_POST = reverse('posts:post_create')
-        cls.USERNAME = 'tester'
-        cls.PROFILE = reverse('posts:profile',
-                              kwargs={'username': cls.USERNAME})
-        cls.user = User.objects.create_user(username=cls.USERNAME)
+        cls.user = User.objects.create_user(username=USERNAME)
         cls.group = Group.objects.create(
             title='Тестовый заголовок',
             slug='test-slug',
@@ -47,7 +47,7 @@ class PostCreateFormTests(TestCase):
         """Тестирование создания поста"""
         posts_count = Post.objects.count()
         response = self.authorized_client.post(
-            self.CREATE_POST,
+            CREATE_POST,
             data=form_data,
             follow=True
         )
@@ -58,7 +58,7 @@ class PostCreateFormTests(TestCase):
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.group.id, form_data['group'])
         self.assertEqual(post.author, self.user)
-        self.assertRedirects(response, self.PROFILE)
+        self.assertRedirects(response, PROFILE)
 
     def test_editing_post(self):
         form_data = {
@@ -81,17 +81,16 @@ class PostCreateFormTests(TestCase):
     def test_post_posts_edit_page_show_correct_context(self):
         templates_url_names = [
             self.EDIT_POST,
-            self.CREATE_POST,
+            CREATE_POST,
         ]
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField,
         }
         for url in templates_url_names:
-            with self.subTest(url=url):
-                response = self.authorized_client.get(url)
-                for value, expected in form_fields.items():
-                    with self.subTest(value=value):
-                        form_field = response.context.get('form').fields.get(
-                            value)
-                        self.assertIsInstance(form_field, expected)
+            response = self.authorized_client.get(url)
+            for value, expected in form_fields.items():
+                with self.subTest(value=value):
+                    form_field = response.context.get('form').fields.get(
+                        value)
+                    self.assertIsInstance(form_field, expected)

@@ -1,89 +1,61 @@
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from ..settings import PAGE_POST
+from ..settings import NUMBER_POSTS
 from ..models import Post, Group, User
 
-POST_RANGE = PAGE_POST + 3
+SLUG = 'test-slug'
+USERNAME = 'post_author'
+POST_RANGE = NUMBER_POSTS + 3
+INDEX = ('posts:index')
+CREATE_POST = reverse('posts:post_create')
+PROFILE = reverse('posts:profile', kwargs={'username': USERNAME})
+GROUP_TITLE = 'Тестовая группа'
+GROUP_SLUG = 'test-slug'
+URLS = {'post_create': reverse('posts:post_create'),
+        'profile': reverse('posts:profile', kwargs={'username': USERNAME})}
+GROUP = reverse('posts:group_posts',
+                kwargs={'slug': SLUG})
 
 
 class ViewsPagesTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.USERNAME = 'post_author'
-        cls.GROUP_TITLE = 'Тестовая группа'
-        cls.GROUP_SLUG = 'test-slug'
         cls.user = User.objects.create_user(username='auth')
         cls.post_author = User.objects.create_user(
-            username=cls.USERNAME,
+            username=USERNAME,
         )
         cls.group = Group.objects.create(
-            title=cls.GROUP_TITLE,
-            slug=cls.GROUP_SLUG,
+            title='Тестовая группа',
+            slug=SLUG,
             description='Тестовое описание',
         )
-        cls.posts = []
-        Post.objects.bulk_create([
+        cls.post = Post.objects.create(
+            author=cls.user,
+            text='Тестовый текст',
+            group=cls.group,
+        )
+        Post.objects.bulk_create(
             Post(
                 text='Тестовый пост',
                 author=cls.user,
+                group=cls.group
             ) for i in range(POST_RANGE)
-        ])
+        )
+        cls.POST_DETAIL = reverse('posts:post_detail',
+                                  kwargs={'post_id': cls.post.id})
 
     def setUp(self):
-        self.URLS = {'post_create': reverse('posts:post_create'),
-                     'profile': reverse('posts:profile',
-                                        kwargs={'username': self.USERNAME})}
         self.authorized_client = Client()
         self.guest_client = Client()
         self.authorized_client.force_login(self.user)
 
-    def test_pages_users_correct_template(self):
-        templates_page_names = {
-            reverse('posts:index'): 'posts/index.html',
-            reverse('posts:group_posts', kwargs={'slug': 'test-slug'}): (
-                'posts/group_list.html'
-            ),
-            reverse('posts:profile', kwargs={'username': 'auth'}): (
-                'posts/profile.html'
-            ),
-            reverse('posts:post_detail', kwargs={'post_id': 1}): (
-                'posts/post_detail.html'
-            ),
-            reverse('posts:post_create'): 'posts/create_post.html',
-            reverse('posts:post_edit', kwargs={'post_id': 1}): (
-                'posts/create_post.html'
-            ),
-        }
-        for reverse_name, template in templates_page_names.items():
-            with self.subTest(template=template):
-                response = self.authorized_client.get(reverse_name)
-                self.assertTemplateUsed(response, template)
-
-    def test_first_page_contains_ten_records(self):
-        response = self.client.get(reverse('posts:index'))
-        # Проверка: количество постов на первой странице равно 10.
-        self.assertEqual(len(response.context['page_obj']), PAGE_POST)
-
     def test_second_page_contains_three_records(self):
-        # Проверка: на второй странице должно быть три поста.
         response = self.client.get(reverse('posts:index') + '?page=2')
-        self.assertEqual(len(response.context['page_obj']), PAGE_POST - 7)
-
-    def test_index_page_show_correct_context(self):
-        """Шаблон task_list сформирован с правильным контекстом."""
-        response = self.guest_client.get(reverse('posts:index'))
-        # Взяли первый элемент из списка и проверили, что его содержание
-        # совпадает с ожидаемым
-        first_object = response.context['page_obj'][0]
-        task_text_0 = first_object.text
-        task_autrhor = first_object.author
-        self.assertEqual(task_text_0, 'Тестовый пост')
-        self.assertEqual(task_autrhor, self.user)
+        self.assertEqual(len(response.context['page_obj']), NUMBER_POSTS - 6)
 
     def test_group_posts_pages_show_correct_context(self):
-        """Шаблон task_detail сформирован с правильным контекстом."""
         response = self.authorized_client.get(
             reverse('posts:group_posts', kwargs={'slug': 'test-slug'})
         )
@@ -101,4 +73,25 @@ class ViewsPagesTests(TestCase):
         self.assertEqual(len(response.context['page_obj']), 10)
         response = self.client.get(reverse('posts:profile', kwargs={
                                    'username': 'auth'}) + '?page=2')
-        self.assertEqual(len(response.context['page_obj']), 3)
+        self.assertEqual(len(response.context['page_obj']), 4)
+
+    def test_post_in_group(self):
+        responses = [
+            [INDEX, 'page_obj'],
+            [GROUP, 'page_obj'],
+            [PROFILE, 'page_obj'],
+            [self.POST_DETAIL, 'post'],
+        ]
+        for url, obj in responses:
+            with self.subTest(url=url):
+                response = self.authorized_client.get(url)
+                if obj == 'page_obj':
+                    posts = response.context[obj]
+                    self.assertEqual(len(posts), 1)
+                    post = posts[0]
+                elif obj == 'post':
+                    post = response.context['post']
+                self.assertEqual(post.text, self.post.text)
+                self.assertEqual(post.author, self.post.author)
+                self.assertEqual(post.group, self.post.group)
+                self.assertEqual(post.pk, self.post.pk)

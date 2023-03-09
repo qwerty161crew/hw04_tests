@@ -8,23 +8,10 @@ class PostURLTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.POST_ID = 1
         cls.USERNAME = 'post_author'
         cls.GROUP_TITLE = 'Тестовая группа'
         cls.GROUP_SLUG = 'test-slug'
-        cls.TEMPLATE_NAME = {
-            'posts/index.html': reverse('posts:index'),
-            'posts/group_list.html': reverse('posts:group_posts',
-                                             kwargs={'slug': cls.GROUP_SLUG}),
-            'posts/profile.html': reverse('posts:profile',
-                                          kwargs={'username': cls.USERNAME}),
-            'posts/post_detail.html': reverse('posts:post_detail',
-                                              kwargs={'post_id': cls.POST_ID}),
-        }
-        cls.TEMPLATE_NAME_AUTH = {
-            '/create/': 'posts/create_post.html',
-            '/posts/1/edit/': 'posts/create_post.html'
-        }
+
         cls.user = User.objects.create_user(username='post_author')
         cls.group = Group.objects.create(
             title=cls.GROUP_TITLE,
@@ -35,6 +22,29 @@ class PostURLTests(TestCase):
             text='Тестовый пост',
             author=cls.user,
         )
+        cls.TEMPLATE_NAME = [
+            ['posts/index.html', reverse('posts:index'), 'all'],
+            ['posts/group_list.html', reverse('posts:group_posts',
+                                              kwargs={'slug': cls.GROUP_SLUG}),
+             'all'],
+            ['posts/profile.html', reverse('posts:profile',
+                                           kwargs={'username': cls.USERNAME}),
+             'all'],
+            ['posts/post_detail.html',
+             reverse('posts:post_detail', kwargs={'post_id': cls.post.id}),
+             'all'],
+            ['posts/create_post.html', reverse('posts:post_create'), 'auth'],
+            ['posts/create_post.html',
+                reverse('posts:post_edit', kwargs={'post_id': cls.post.id}),
+                'auth'],
+        ]
+        cls.REDIRECT_URLS = [[reverse('users:login') + '?next=/create/',
+                              reverse('posts:post_create')],
+                             [reverse('users:login')
+                              + f'?next=/posts/{cls.post.id}/edit/',
+                              reverse('posts:post_edit',
+                                      kwargs={'post_id': cls.post.id})]
+                             ]
 
     def setUp(self):
         self.guest_client = Client()
@@ -45,13 +55,16 @@ class PostURLTests(TestCase):
         """URL-адрес использует соответствующий шаблон."""
         # Шаблоны по адресам
 
-        for template, address in self.TEMPLATE_NAME.items():
+        for template, address, user in self.TEMPLATE_NAME:
             with self.subTest(address=address):
-                response = self.guest_client.get(address)
+                if user == 'auth':
+                    response = self.authorized_client.get(address)
+                else:
+                    response = self.guest_client.get(address)
                 self.assertTemplateUsed(response, template)
 
-    def test_urls_auth(self):
-        for address, template in self.TEMPLATE_NAME_AUTH.items():
+    def test_urls_redirects(self):
+        for destination, address in self.REDIRECT_URLS:
             with self.subTest(address=address):
-                response = self.authorized_client.get(address)
-                self.assertTemplateUsed(response, template)
+                response = self.guest_client.get(address)
+                self.assertRedirects(response, destination)
