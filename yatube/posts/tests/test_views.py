@@ -86,12 +86,12 @@ class PaginatorViewsTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = User.objects.create_user(username='post_author')
-        Post.objects.bulk_create([
+        Post.objects.bulk_create(
             Post(
                 text='Тестовый текст',
                 author=cls.user,
             ) for i in range(TOTAL_POSTS)
-        ])
+        )
 
     def test_first_page(self):
         response = self.client.get(INDEX)
