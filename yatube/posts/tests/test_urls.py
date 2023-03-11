@@ -44,7 +44,7 @@ class PostURLTests(TestCase):
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         # Шаблоны по адресам
-        TEMPLATE_NAME = [
+        CASES = [
             ['posts/index.html', INDEX, self.guest_client],
             ['posts/group_list.html', GROUP,
              self.guest_client],
@@ -58,9 +58,9 @@ class PostURLTests(TestCase):
                 self.POST_EDIT,
                 self.authorized_client],
         ]
-        for template, address, user in TEMPLATE_NAME:
+        for template, address, user_status in CASES:
             with self.subTest(address=address):
-                response = user.get(address)
+                response = user_status.get(address)
                 self.assertTemplateUsed(response, template)
 
     def test_urls_redirects(self):
@@ -78,7 +78,7 @@ class PostURLTests(TestCase):
     def test_urs_exists_at_desired_location_guest(self):
         """Проверка доступа на станицы, авторизированного пользователя и
         гостя"""
-        templates_url_names = [
+        http_status = [
             [INDEX, self.guest_client, HTTPStatus.OK],
             [GROUP,
              self.guest_client, HTTPStatus.OK],
@@ -94,6 +94,6 @@ class PostURLTests(TestCase):
             [self.POST_EDIT,
              self.guest_client, HTTPStatus.FOUND],
         ]
-        for url, user_status, answer in templates_url_names:
+        for url, user_status, answer in http_status:
             with self.subTest(url=url):
                 self.assertEqual(user_status.get(url).status_code, answer)

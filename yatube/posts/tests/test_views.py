@@ -100,5 +100,5 @@ class PaginatorViewsTest(TestCase):
     def test_second_page(self):
         response = self.client.get(f'{INDEX}?page=2')
         calculation_len_obj = len(response.context['page_obj'])
-        calculation_obj = (NUMBER_POSTS + 1) % NUMBER_POSTS
+        calculation_obj = 11 % NUMBER_POSTS
         self.assertEqual(calculation_len_obj, calculation_obj)
