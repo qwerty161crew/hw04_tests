@@ -14,7 +14,6 @@ GROUP = reverse('posts:group_posts',
                 kwargs={'slug': SLUG})
 GROUP_1 = reverse('posts:group_posts',
                   kwargs={'slug': SLUG_1})
-TOTAL_POSTS = NUMBER_POSTS + 1
 
 
 class PostUrlTests(TestCase):
@@ -90,7 +89,7 @@ class PaginatorViewsTest(TestCase):
             Post(
                 text='Тестовый текст',
                 author=cls.user,
-            ) for i in range(TOTAL_POSTS)
+            ) for i in range(NUMBER_POSTS + 1)
         )
 
     def test_first_page(self):
@@ -101,5 +100,5 @@ class PaginatorViewsTest(TestCase):
     def test_second_page(self):
         response = self.client.get(f'{INDEX}?page=2')
         calculation_len_obj = len(response.context['page_obj'])
-        calculation_obj = TOTAL_POSTS % NUMBER_POSTS
+        calculation_obj = (NUMBER_POSTS + 1) % NUMBER_POSTS
         self.assertEqual(calculation_len_obj, calculation_obj)
