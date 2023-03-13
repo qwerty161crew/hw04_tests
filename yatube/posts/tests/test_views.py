@@ -14,7 +14,7 @@ GROUP = reverse('posts:group_posts',
                 kwargs={'slug': SLUG})
 GROUP_1 = reverse('posts:group_posts',
                   kwargs={'slug': SLUG_1})
-NUMBER_POSTS_ALL = NUMBER_POSTS + 5
+NUMBER_POSTS_ALL = NUMBER_POSTS + 10
 
 
 class PostUrlTests(TestCase):
@@ -103,15 +103,14 @@ class PaginatorViewsTest(TestCase):
 
     def test_page(self):
         cases = (
-            INDEX, GROUP, PROFILE
+            INDEX, GROUP, PROFILE,
+            f'{INDEX}?page=2',
+            f'{GROUP}?page=2',
+            f'{PROFILE}?page=2'
         )
         for case in cases:
             with self.subTest(case=case):
                 self.assertEqual(len(self.guest_client.get(
                     case).context.get('page_obj')),
                     NUMBER_POSTS
-                )
-                self.assertEqual(len(self.guest_client.get(
-                    case + '?page=2').context.get('page_obj')),
-                    NUMBER_POSTS_ALL - NUMBER_POSTS
                 )
