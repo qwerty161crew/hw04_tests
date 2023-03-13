@@ -7,6 +7,7 @@ from ..models import Post, Group, User
 
 GROUP_TITLE = 'Тестовая группа'
 USERNAME = 'post_author'
+ANOTHER_USERNAME = 'kUZEN'
 SLUG = 'test-slug'
 INDEX = reverse('posts:index')
 PROFILE = reverse('posts:profile',
@@ -21,7 +22,8 @@ class PostURLTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='post_author')
+        cls.user = User.objects.create_user(username=USERNAME)
+        cls.another_user = User.objects.create_user(username=ANOTHER_USERNAME)
         cls.group = Group.objects.create(
             title=GROUP_TITLE,
             slug=SLUG,
@@ -40,6 +42,8 @@ class PostURLTests(TestCase):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        self.authorized_client_2 = Client()
+        self.authorized_client_2.force_login(self.another_user)
 
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
@@ -58,27 +62,15 @@ class PostURLTests(TestCase):
                 self.POST_EDIT,
                 self.authorized_client],
         ]
-        for template, address, user_status in CASES:
+        for template, address, client in CASES:
             with self.subTest(address=address):
-                response = user_status.get(address)
+                response = client.get(address)
                 self.assertTemplateUsed(response, template)
-
-    def test_urls_redirects(self):
-        REDIRECT_URLS = [[LOGIN + '?next=/create/',
-                          CREATE],
-                         [LOGIN
-                          + f'?next=/posts/{self.post.id}/edit/',
-                          self.POST_EDIT]
-                         ]
-        for destination, address in REDIRECT_URLS:
-            with self.subTest(address=address):
-                response = self.guest_client.get(address)
-                self.assertRedirects(response, destination)
 
     def test_urs_exists_at_desired_location_guest(self):
         """Проверка доступа на станицы, авторизированного пользователя и
         гостя"""
-        http_status = [
+        cases = [
             [INDEX, self.guest_client, HTTPStatus.OK],
             [GROUP,
              self.guest_client, HTTPStatus.OK],
@@ -93,7 +85,8 @@ class PostURLTests(TestCase):
              self.authorized_client, HTTPStatus.OK],
             [self.POST_EDIT,
              self.guest_client, HTTPStatus.FOUND],
+            [self.POST_EDIT, self.authorized_client_2, HTTPStatus.FOUND]
         ]
-        for url, user_status, answer in http_status:
-            with self.subTest(url=url):
-                self.assertEqual(user_status.get(url).status_code, answer)
+        for url, client, answer in cases:
+            with self.subTest(url=url, client=client, answer=answer):
+                self.assertEqual(client.get(url).status_code, answer)

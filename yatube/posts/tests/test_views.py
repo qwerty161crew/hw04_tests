@@ -14,6 +14,7 @@ GROUP = reverse('posts:group_posts',
                 kwargs={'slug': SLUG})
 GROUP_1 = reverse('posts:group_posts',
                   kwargs={'slug': SLUG_1})
+NUMBER_POSTS_ALL = NUMBER_POSTS + 5
 
 
 class PostUrlTests(TestCase):
@@ -85,20 +86,26 @@ class PaginatorViewsTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = User.objects.create_user(username='post_author')
+        cls.group = Group.objects.create(
+            title='Тестовый заголовок',
+            slug=SLUG,
+            description='Тестовое описание',
+        )
         Post.objects.bulk_create(
             Post(
                 text='Тестовый текст',
                 author=cls.user,
-            ) for i in range(NUMBER_POSTS + 1)
+                group=cls.group
+            ) for i in range(NUMBER_POSTS_ALL)
         )
 
-    def test_first_page(self):
-        response = self.client.get(INDEX)
-        self.assertEqual(len(response.context['page_obj']),
-                         NUMBER_POSTS)
+    def test_page(self):
+        cases = (INDEX, GROUP, PROFILE)
+        for case in cases:
+            response_first = self.client.get(case)
+            response_second = self.client.get(f'{case}?page=2')
+            second_page_len = len(response_second.context['page_obj'])
 
-    def test_second_page(self):
-        response = self.client.get(f'{INDEX}?page=2')
-        calculation_len_obj = len(response.context['page_obj'])
-        calculation_obj = 11 % NUMBER_POSTS
-        self.assertEqual(calculation_len_obj, calculation_obj)
+            self.assertEqual(len(response_first.context['page_obj']),
+                             NUMBER_POSTS)
+            self.assertEqual(second_page_len, NUMBER_POSTS_ALL - NUMBER_POSTS)

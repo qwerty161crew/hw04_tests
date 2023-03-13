@@ -71,8 +71,8 @@ def post_create(request):
 def post_edit(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     if request.user.id != post.author.id:
-        return redirect("posts:post_detail",
-                        kwargs={'post_id': post_id})
+        return redirect(reverse("posts:post_detail",
+                        kwargs={'post_id': post_id}))
     form = PostForm(request.POST or None, instance=post)
     if form.is_valid():
         form.save()
