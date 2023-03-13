@@ -1,6 +1,5 @@
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render, redirect
-from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 
 from .forms import PostForm
@@ -55,29 +54,28 @@ def post_detail(request, post_id):
 
 @login_required
 def post_create(request):
-    """Добавления поста."""
-    template = "posts/create_post.html"
     form = PostForm(request.POST or None)
-    if not form.is_valid():
-        return render(request, template, {"form": form, "is_edit": False})
-    instance = form.save(commit=False)
-    instance.author_id = request.user.id
-    instance.save()
-    return redirect(reverse("posts:profile",
-                            kwargs={'username': request.user}))
+    if form.is_valid():
+        create_post = form.save(commit=False)
+        create_post.author = request.user
+        create_post.save()
+        return redirect('posts:profile', create_post.author)
+    template = 'posts/create_post.html'
+    context = {'form': form}
+    return render(request, template, context)
 
 
 @login_required
 def post_edit(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     if request.user.id != post.author.id:
-        return redirect(reverse("posts:post_detail",
-                        kwargs={'post_id': post_id}))
+        return redirect('posts:post_detail', post_id)
+
     form = PostForm(request.POST or None, instance=post)
     if form.is_valid():
         form.save()
-        return redirect(reverse("posts:post_detail",
-                                kwargs={'post_id': post_id}))
+        return redirect('posts:post_detail', post_id)
+
     context = {
         "form": form,
         "is_edit": True,

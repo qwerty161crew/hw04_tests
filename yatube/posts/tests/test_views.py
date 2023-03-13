@@ -41,7 +41,6 @@ class PostUrlTests(TestCase):
                                   kwargs={'post_id': cls.post.id})
 
     def setUp(self):
-        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
@@ -99,13 +98,20 @@ class PaginatorViewsTest(TestCase):
             ) for i in range(NUMBER_POSTS_ALL)
         )
 
-    def test_page(self):
-        cases = (INDEX, GROUP, PROFILE)
-        for case in cases:
-            response_first = self.client.get(case)
-            response_second = self.client.get(f'{case}?page=2')
-            second_page_len = len(response_second.context['page_obj'])
+    def setUp(self):
+        self.guest_client = Client()
 
-            self.assertEqual(len(response_first.context['page_obj']),
-                             NUMBER_POSTS)
-            self.assertEqual(second_page_len, NUMBER_POSTS_ALL - NUMBER_POSTS)
+    def test_page(self):
+        cases = (
+            INDEX, GROUP, PROFILE
+        )
+        for case in cases:
+            with self.subTest(case=case):
+                self.assertEqual(len(self.guest_client.get(
+                    case).context.get('page_obj')),
+                    NUMBER_POSTS
+                )
+                self.assertEqual(len(self.guest_client.get(
+                    case + '?page=2').context.get('page_obj')),
+                    NUMBER_POSTS_ALL - NUMBER_POSTS
+                )

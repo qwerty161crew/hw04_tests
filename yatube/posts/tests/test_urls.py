@@ -90,3 +90,15 @@ class PostURLTests(TestCase):
         for url, client, answer in cases:
             with self.subTest(url=url, client=client, answer=answer):
                 self.assertEqual(client.get(url).status_code, answer)
+
+    def test_urls_redirects(self):
+        REDIRECT_URLS = [[LOGIN + '?next=/create/',
+                          CREATE],
+                         [LOGIN
+                          + f'?next=/posts/{self.post.id}/edit/',
+                          self.POST_EDIT]
+                         ]
+        for destination, address in REDIRECT_URLS:
+            with self.subTest(address=address):
+                response = self.guest_client.get(address)
+                self.assertRedirects(response, destination)
