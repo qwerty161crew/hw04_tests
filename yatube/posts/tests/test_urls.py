@@ -92,14 +92,14 @@ class PostURLTests(TestCase):
                 self.assertEqual(client.get(url).status_code, answer)
 
     def test_urls_redirects(self):
-        REDIRECT_URLS = [[f'{LOGIN}?next=/create/',
-                          CREATE],
-                         [f'{LOGIN}?next=/posts/{self.post.id}/edit/',
-                          self.POST_EDIT],
-                         [f'{LOGIN}?next=/posts/{self.post.id}/edit/',
-                          self.POST_EDIT]
-                         ]
-        for destination, address in REDIRECT_URLS:
+        self.REDIRECT_URLS = [[f'{LOGIN}?next=/create/',
+                              CREATE, self.guest_client],
+                              [f'{LOGIN}?next=/posts/{self.post.id}/edit/',
+                              self.POST_EDIT, self.guest_client],
+                              [self.POST_DETAIL, self.POST_EDIT,
+                               self.authorized_client_2]
+                              ]
+        for destination, address, client in self.REDIRECT_URLS:
             with self.subTest(address=address):
-                response = self.guest_client.get(address)
+                response = client.get(address)
                 self.assertRedirects(response, destination)

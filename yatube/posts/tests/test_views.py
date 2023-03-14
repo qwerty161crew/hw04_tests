@@ -14,7 +14,6 @@ GROUP = reverse('posts:group_posts',
                 kwargs={'slug': SLUG})
 GROUP_1 = reverse('posts:group_posts',
                   kwargs={'slug': SLUG_1})
-NUMBER_POSTS_ALL = NUMBER_POSTS + 10
 
 
 class PostUrlTests(TestCase):
@@ -95,22 +94,23 @@ class PaginatorViewsTest(TestCase):
                 text='Тестовый текст',
                 author=cls.user,
                 group=cls.group
-            ) for i in range(NUMBER_POSTS_ALL)
+            ) for i in range(NUMBER_POSTS + 1)
         )
 
     def setUp(self):
         self.guest_client = Client()
 
     def test_page(self):
-        cases = (
-            INDEX, GROUP, PROFILE,
-            f'{INDEX}?page=2',
-            f'{GROUP}?page=2',
-            f'{PROFILE}?page=2'
-        )
-        for case in cases:
-            with self.subTest(case=case):
+        urls = [
+            [INDEX, NUMBER_POSTS], [GROUP, NUMBER_POSTS],
+            [PROFILE, NUMBER_POSTS],
+            [f'{INDEX}?page=2', 1],
+            [f'{GROUP}?page=2', 1],
+            [f'{PROFILE}?page=2', 1]
+        ]
+        for url, number in urls:
+            with self.subTest(url=url):
                 self.assertEqual(len(self.guest_client.get(
-                    case).context.get('page_obj')),
-                    NUMBER_POSTS
+                    url).context.get('page_obj')),
+                    number
                 )
